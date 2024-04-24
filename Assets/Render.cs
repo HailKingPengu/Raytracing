@@ -11,11 +11,13 @@ public struct Sphere
 {
     public Vector3 position;
     public float radius;
-    public Color colour;
+    public RayMaterial material;
 }
 
 public class Render : MonoBehaviour
 {
+
+    [SerializeField] int maxBounceCount;
 
     [SerializeField] bool useShaderInScene;
     [SerializeField] Shader shader;
@@ -44,6 +46,19 @@ public class Render : MonoBehaviour
             }
 
             UpdateCameraParams(Camera.current);
+
+            material.SetInt("MaxBounceCount", maxBounceCount);
+
+            if (material == null || (material.shader != shader && shader != null))
+            {
+                if (shader == null)
+                {
+                    shader = Shader.Find("Unlit/Texture");
+                }
+
+                material = new Material(shader);
+            }
+
             CreateSpheres();
 
             Graphics.Blit(null, destination, material);
@@ -76,7 +91,7 @@ public class Render : MonoBehaviour
             {
                 position = sphereObjects[i].transform.position,
                 radius = sphereObjects[i].transform.localScale.x * 0.5f,
-                colour = sphereObjects[i].material
+                material = sphereObjects[i].material
             };
         }
 

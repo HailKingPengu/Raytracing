@@ -91,6 +91,8 @@ Shader "Unlit/RayShader"
             struct RayMaterial
             {
                 float4 colour;
+                float4 emissionColour;
+                float emissionStrength;
             };
 
             struct HitInfo
@@ -136,8 +138,6 @@ Shader "Unlit/RayShader"
                 return hitInfo;
             };
 
-
-
             StructuredBuffer<Sphere> Spheres;
             int NumSpheres;
 
@@ -160,31 +160,81 @@ Shader "Unlit/RayShader"
                 return closestHit;
             };
 
+            int MaxBounceCount;
 
+            float3 Trace(Ray r, inout uint rngState)
+            {
+                float3 incomingLight = 0;
+                float3 rayColour = 1;
 
-            float3 ray_color(Ray r) {
+                for (int i = 0; i <= MaxBounceCount; i++)
+                {
+                    HitInfo hitInfo = RayHit(r);
+                    if(hitInfo.hit)
+                    {
+                        r.origin = hitInfo.hitPoint;
+                        r.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
 
-                float t = hit_sphere(float3(0,0,-1), 0.5, r).dist;
-                if (t > 0.0) {
-                    float3 N = normalize(r.at(t) - float3(0,0,-1));
-                    return 0.5 * float3(N.x + 1, N.y + 1, N.z + 1);
+                        RayMaterial material = hitInfo.material;
+                        float3 emittedLight = material.emissionColour * material.emissionStrength;
+                        incomingLight += emittedLight * rayColour;
+                        rayColour *= material.colour;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
-                float3 unit_direction = normalize(r.dir);
-                float a = 0.5*(unit_direction.y + 1.0);
-                return (1.0-a)*float3(1.0, 1.0, 1.0) + a*float3(0.5, 0.7, 1.0);
+                return incomingLight;
             }
+
+
+            // float3 ray_color(Ray r, inout uint state) {
+
+            //     // float t = hit_sphere(float3(0,0,-1), 0.5, r).dist;
+            //     // if (t > 0.0) {
+            //     //     float3 N = normalize(r.at(t) - float3(0,0,-1));
+            //     //     return 0.5 * float3(N.x + 1, N.y + 1, N.z + 1);
+            //     // }
+
+            //     HitInfo hitInfo = RayHit(r);
+
+            //     //nevermind
+
+            //     // if(hitInfo.hit)
+            //     // {
+            //     //     float3 direction = RandomHemisphereDirection(hitInfo.normal, state);
+
+            //     //     Ray nextRay;
+            //     //     nextRay.origin = hitInfo.hitPoint;
+            //     //     nextRay.dir = direction;
+
+            //     //     return 0.5 * ray_color(nextRay, state);
+            //     // }
+
+            //     float3 unit_direction = normalize(r.dir);
+            //     float a = 0.5*(unit_direction.y + 1.0);
+            //     return (1.0-a)*float3(1.0, 1.0, 1.0) + a*float3(0.5, 0.7, 1.0);
+            // }
 
             fixed4 frag (v2f i) : SV_Target
             {
                 float3 viewPointLocal = float3(i.uv - 0.5, 1) * CameraParameters;
                 float3 viewPoint = mul(CamWorldMatrix, float4(viewPointLocal, 1));
 
+                //seed generation 
+                uint2 numPixels = _ScreenParams.xy;
+                uint2 pixelCoord = i.uv * numPixels;
+                uint pixelIndex = pixelCoord.y * numPixels.x + pixelCoord.x;
+                uint rngState = pixelIndex;
+
                 Ray ray;
                 ray.origin = _WorldSpaceCameraPos;
                 ray.dir = normalize(viewPoint - ray.origin);
 
-                return float4(RayHit(ray).normal, 0);
+                float3 colour = Trace(ray, rngState);
+                return float4(colour, 1);
             }
             ENDCG
         }

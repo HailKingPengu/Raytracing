@@ -1,8 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class RayTracedSphere : MonoBehaviour
 {
-    [SerializeField] public Color material;
+    public RayMaterial material;
+}
+
+[System.Serializable]
+public struct RayMaterial
+{
+    public Color colour;
+    public Color emissionColour;
+    public float emissionStrength;
 }
