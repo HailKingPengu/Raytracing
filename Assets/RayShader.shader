@@ -262,7 +262,7 @@ Shader "Unlit/RayShader"
                 uint2 numPixels = _ScreenParams.xy;
                 uint2 pixelCoord = i.uv * numPixels;
                 uint pixelIndex = pixelCoord.y * numPixels.x + pixelCoord.x;
-                uint rngState = pixelIndex + CurrentFrame * 2000;
+                uint rngState = pixelIndex + CurrentFrame * 2032400;
 
                 Ray ray;
                 ray.origin = _WorldSpaceCameraPos;
@@ -281,6 +281,7 @@ Shader "Unlit/RayShader"
 
                 if(IsRendering)
                 {
+                    //rendertextures appear to be flipped(?)
                     float4 prevColour = tex2D(PrevFrame, float2(i.uv.x, 1 - i.uv.y));
 
                     //return float4(i.uv.x, i.uv.y, 0, 0);
