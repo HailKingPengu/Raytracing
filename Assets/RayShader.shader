@@ -58,12 +58,26 @@ Shader "Unlit/RayShader"
                 }
             };
 
+            struct RayMaterial
+            {
+                float4 colour;
+            };
+
             struct HitInfo
             {
                 bool hit;
                 float dist;
                 float3 hitPoint;
                 float3 normal;
+
+                RayMaterial material;
+            };
+
+            struct Sphere
+            {
+                float3 center;
+                float radius;
+                RayMaterial material;
             };
 
             HitInfo hit_sphere(float3 center, float radius, Ray r) {
@@ -89,7 +103,33 @@ Shader "Unlit/RayShader"
                     }
                 } 
                 return hitInfo;
-            }
+            };
+
+
+
+            StructuredBuffer<Sphere> Spheres;
+            int NumSpheres;
+
+            HitInfo RayHit(Ray r){
+                HitInfo closestHit = (HitInfo)0;
+                //first hit should be closer than infinity!
+                closestHit.dist = 1.#INF;
+
+                for(int i = 0; i < NumSpheres; i++){
+                    Sphere sphere = Spheres[i];
+                    HitInfo hitInfo = hit_sphere(sphere.center, sphere.radius, r);
+
+                    if(hitInfo.hit && hitInfo.dist < closestHit.dist)
+                    {
+                        closestHit = hitInfo;
+                        closestHit.material = sphere.material;
+                    }
+                }
+
+                return closestHit;
+            };
+
+
 
             float3 ray_color(Ray r) {
 
@@ -113,7 +153,7 @@ Shader "Unlit/RayShader"
                 ray.origin = _WorldSpaceCameraPos;
                 ray.dir = normalize(viewPoint - ray.origin);
 
-                return float4(ray_color(ray), 0);
+                return float4(RayHit(ray).normal, 0);
             }
             ENDCG
         }
