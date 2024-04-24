@@ -74,6 +74,13 @@ Shader "Unlit/RayShader"
                 return dir * sign(dot(normal, dir));
             }
 
+            float2 RandomPointInCircle(inout uint rngState)
+            {
+                float angle = RandomF(rngState) * 6.2830;
+                float2 pointOnCircle = float2(cos(angle), sin(angle));
+                return pointOnCircle * sqrt(RandomF(rngState));
+            }
+
             float3 CameraParameters;
             float4x4 CamWorldMatrix;
 
@@ -92,7 +99,10 @@ Shader "Unlit/RayShader"
             {
                 float4 colour;
                 float4 emissionColour;
+                float4 specularColour;
                 float emissionStrength;
+                float smoothness;
+                float specular;
             };
 
             struct HitInfo
@@ -110,6 +120,15 @@ Shader "Unlit/RayShader"
                 float3 center;
                 float radius;
                 RayMaterial material;
+            };
+
+            float3 SkyColourHorizon;
+            float3 SkyColourZenith;
+
+            float3 GetEnvironmentLight(Ray r)
+            {
+                float skyGradientT = pow(smoothstep(0, 0.4, r.dir.y), 0.35);
+                return lerp(SkyColourHorizon, SkyColourZenith, skyGradientT);
             };
 
             HitInfo hit_sphere(float3 center, float radius, Ray r) {
@@ -131,7 +150,7 @@ Shader "Unlit/RayShader"
                         hitInfo.hit = true;
                         hitInfo.dist = dist;
                         hitInfo.hitPoint = r.origin + r.dir * dist;
-                        hitInfo.normal = normalize(hitInfo.hitPoint = center);
+                        hitInfo.normal = normalize(hitInfo.hitPoint - center);
                     }
                 } 
 
@@ -161,6 +180,14 @@ Shader "Unlit/RayShader"
             };
 
             int MaxBounceCount;
+            int NumRaysPerPixel;
+            int CurrentFrame;
+            float BlurStrength;
+
+            bool RenderImage;
+
+            float3 CamRight;
+            float3 CamUp;
 
             float3 Trace(Ray r, inout uint rngState)
             {
@@ -172,16 +199,21 @@ Shader "Unlit/RayShader"
                     HitInfo hitInfo = RayHit(r);
                     if(hitInfo.hit)
                     {
-                        r.origin = hitInfo.hitPoint;
-                        r.dir = RandomHemisphereDirection(hitInfo.normal, rngState);
-
                         RayMaterial material = hitInfo.material;
+
+                        r.origin = hitInfo.hitPoint;
+                        float3 diffuseDir = normalize(hitInfo.normal + RandomDirection(rngState));
+                        float3 specularDir = reflect(r.dir, hitInfo.normal);
+                        bool isSpecularBounce = material.specular >= RandomF(rngState);
+                        r.dir = lerp(diffuseDir, specularDir, material.smoothness * isSpecularBounce);
+
                         float3 emittedLight = material.emissionColour * material.emissionStrength;
                         incomingLight += emittedLight * rayColour;
-                        rayColour *= material.colour;
+                        rayColour *= lerp(material.colour, material.specularColour, isSpecularBounce);
                     }
                     else
                     {
+                        incomingLight += GetEnvironmentLight(r) * rayColour;
                         break;
                     }
                 }
@@ -189,6 +221,9 @@ Shader "Unlit/RayShader"
                 return incomingLight;
             }
 
+            bool IsRendering;
+			sampler2D PrevFrame;
+			int RenderedFrames;
 
             // float3 ray_color(Ray r, inout uint state) {
 
@@ -227,14 +262,33 @@ Shader "Unlit/RayShader"
                 uint2 numPixels = _ScreenParams.xy;
                 uint2 pixelCoord = i.uv * numPixels;
                 uint pixelIndex = pixelCoord.y * numPixels.x + pixelCoord.x;
-                uint rngState = pixelIndex;
+                uint rngState = pixelIndex + CurrentFrame * 2000;
 
                 Ray ray;
-                ray.origin = _WorldSpaceCameraPos;
+                                ray.origin = _WorldSpaceCameraPos;
                 ray.dir = normalize(viewPoint - ray.origin);
 
-                float3 colour = Trace(ray, rngState);
-                return float4(colour, 1);
+                float3 colour;
+                for (int rayIndex = 0; rayIndex < NumRaysPerPixel; rayIndex++)
+                {
+                    float2 blurOffset = RandomPointInCircle(rngState) * BlurStrength / numPixels.x;
+                    ray.origin += CamRight * blurOffset.x + CamUp * blurOffset.y;
+
+
+                    colour += Trace(ray, rngState);
+                }
+
+
+                if(IsRendering)
+                {
+                    float4 prevColour = tex2D(PrevFrame, i.uv);
+
+                    float weight = 1.0 / (RenderedFrames + 1);
+                    //return float4(saturate(prevColour * (1 - weight) + (colour / NumRaysPerPixel) * weight), 0);
+                    return prevColour;
+                }
+
+                return float4(colour / NumRaysPerPixel, 1);
             }
             ENDCG
         }

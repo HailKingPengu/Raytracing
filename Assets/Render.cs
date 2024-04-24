@@ -18,10 +18,22 @@ public class Render : MonoBehaviour
 {
 
     [SerializeField] int maxBounceCount;
+    [SerializeField] int numRaysPerPixel;
+    int currentFrame;
 
-    [SerializeField] bool useShaderInScene;
+    [SerializeField] bool isRendering;
+    int isRenderingI;
+    int renderedFrames;
+
+    [SerializeField] Color skyColourHorizon;
+    [SerializeField] Color skyColourZenith;
+
+    [SerializeField] float antiAliasingStrength;
+
+    [SerializeField] bool useShader;
     [SerializeField] Shader shader;
     Material material;
+    RenderTexture previousFrame;
 
     List<GameObject> objects;
 
@@ -30,9 +42,12 @@ public class Render : MonoBehaviour
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
 
+        //for seed
+        currentFrame++;
+
         bool isSceneCam = Camera.current.name == "SceneCamera";
 
-        if (useShaderInScene)
+        if (useShader)
         {
 
             if (material == null || (material.shader != shader && shader != null))
@@ -47,7 +62,23 @@ public class Render : MonoBehaviour
 
             UpdateCameraParams(Camera.current);
 
-            material.SetInt("MaxBounceCount", maxBounceCount);
+            material.SetInt("MaxBounceCount", maxBounceCount); 
+            material.SetInt("NumRaysPerPixel", numRaysPerPixel);
+            material.SetInt("CurrentFrame", currentFrame);
+
+            material.SetColor("SkyColourHorizon", skyColourHorizon);
+            material.SetColor("SkyColourZenith", skyColourZenith);
+
+            material.SetFloat("BlurStrength", antiAliasingStrength);
+            material.SetVector("CamRight", Camera.current.transform.right);
+            material.SetVector("CamUp", Camera.current.transform.up);
+
+            material.SetInt("IsRendering", isRenderingI);
+            material.SetInt("RenderedFrames", renderedFrames);
+
+            //RenderTexture prevFrameCopy = RenderTexture.GetTemporary(source.width, source.height, 0);
+            //Graphics.Blit(previousFrame, prevFrameCopy);
+            material.SetTexture("PrevFrame", previousFrame);
 
             if (material == null || (material.shader != shader && shader != null))
             {
@@ -61,11 +92,23 @@ public class Render : MonoBehaviour
 
             CreateSpheres();
 
-            Graphics.Blit(null, destination, material);
+            Graphics.Blit(null, previousFrame, material);
+            Graphics.Blit(previousFrame, destination);
         }
         else
         {
             Graphics.Blit(source, destination);
+        }
+
+        if (isRendering)
+        {
+            renderedFrames++;
+            isRenderingI = 1;
+        }
+        else
+        {
+            renderedFrames = 0;
+            isRenderingI = 0;
         }
 
     }
