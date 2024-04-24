@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static Unity.VisualScripting.Member;
 
 public struct Sphere
 {
@@ -42,6 +43,12 @@ public class Render : MonoBehaviour
     void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
 
+        if (previousFrame == null)
+        {
+            previousFrame = new RenderTexture(source.width, source.height, 0);
+            previousFrame.enableRandomWrite = true;
+        }
+
         //for seed
         currentFrame++;
 
@@ -62,7 +69,7 @@ public class Render : MonoBehaviour
 
             UpdateCameraParams(Camera.current);
 
-            material.SetInt("MaxBounceCount", maxBounceCount); 
+            material.SetInt("MaxBounceCount", maxBounceCount);
             material.SetInt("NumRaysPerPixel", numRaysPerPixel);
             material.SetInt("CurrentFrame", currentFrame);
 
@@ -92,8 +99,10 @@ public class Render : MonoBehaviour
 
             CreateSpheres();
 
-            Graphics.Blit(null, previousFrame, material);
-            Graphics.Blit(previousFrame, destination);
+            Graphics.Blit(null, destination, material);
+            Graphics.Blit(destination, previousFrame);
+
+            //RenderTexture.ReleaseTemporary(prevFrameCopy);
         }
         else
         {
@@ -145,13 +154,19 @@ public class Render : MonoBehaviour
         // Create buffer containing all sphere data, and send it to the shader
         int stride = System.Runtime.InteropServices.Marshal.SizeOf(typeof(Sphere));
         if (sphereBuffer == null || !sphereBuffer.IsValid() || sphereBuffer.count != length || sphereBuffer.stride != stride)
-		{
-			if (sphereBuffer != null) { sphereBuffer.Release(); }
+        {
+            if (sphereBuffer != null) { sphereBuffer.Release(); }
             sphereBuffer = new ComputeBuffer(length, stride, ComputeBufferType.Structured);
-		}
+        }
 
         sphereBuffer.SetData(spheres);
         material.SetBuffer("Spheres", sphereBuffer);
         material.SetInt("NumSpheres", sphereObjects.Length);
+    }
+
+    void FixedUpdate()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+            isRendering = !isRendering;
     }
 }

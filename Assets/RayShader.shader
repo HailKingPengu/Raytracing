@@ -265,7 +265,7 @@ Shader "Unlit/RayShader"
                 uint rngState = pixelIndex + CurrentFrame * 2000;
 
                 Ray ray;
-                                ray.origin = _WorldSpaceCameraPos;
+                ray.origin = _WorldSpaceCameraPos;
                 ray.dir = normalize(viewPoint - ray.origin);
 
                 float3 colour;
@@ -281,11 +281,13 @@ Shader "Unlit/RayShader"
 
                 if(IsRendering)
                 {
-                    float4 prevColour = tex2D(PrevFrame, i.uv);
+                    float4 prevColour = tex2D(PrevFrame, float2(i.uv.x, 1 - i.uv.y));
+
+                    //return float4(i.uv.x, i.uv.y, 0, 0);
 
                     float weight = 1.0 / (RenderedFrames + 1);
-                    //return float4(saturate(prevColour * (1 - weight) + (colour / NumRaysPerPixel) * weight), 0);
-                    return prevColour;
+                    return float4(saturate(prevColour * (1 - weight) + (colour / NumRaysPerPixel) * weight), 0);
+                    //return prevColour;
                 }
 
                 return float4(colour / NumRaysPerPixel, 1);
