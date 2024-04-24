@@ -44,6 +44,36 @@ Shader "Unlit/RayShader"
                 return o;
             };
 
+            // www.pcg-random.org
+            float RandomF(inout uint state)
+            {
+                state = state * 747796405 + 2891336453;
+                uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+                result = (result >> 22) ^ result;
+                return result / 4294967295.0;
+            }
+
+            float RandomFNormalDis(inout uint state)
+            {
+                float theta = 2 * 3.1415926 * RandomF(state);
+                float rho = sqrt(-2 * log(RandomF(state)));
+                return rho * cos(theta);
+            }
+
+            float3 RandomDirection(inout uint state)
+            {
+                float x = RandomFNormalDis(state);
+                float y = RandomFNormalDis(state);
+                float z = RandomFNormalDis(state);
+                return normalize(float3(x, y, z));
+            }
+
+            float3 RandomHemisphereDirection(float3 normal, inout uint state)
+            {
+                float3 dir = RandomDirection(state);
+                return dir * sign(dot(normal, dir));
+            }
+
             float3 CameraParameters;
             float4x4 CamWorldMatrix;
 
@@ -102,6 +132,7 @@ Shader "Unlit/RayShader"
                         hitInfo.normal = normalize(hitInfo.hitPoint = center);
                     }
                 } 
+
                 return hitInfo;
             };
 

@@ -155,7 +155,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d58b6865d64a66e418a3ccdad9cab056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  material: {r: 0.25943398, g: 0.4728481, b: 1, a: 0}
+  material: {r: 0.25943398, g: 0.4728481, b: 1, a: 1}
 --- !u!135 &51263597
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -380,7 +380,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d58b6865d64a66e418a3ccdad9cab056, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  material: {r: 1, g: 0, b: 0, a: 0}
+  material: {r: 1, g: 0, b: 0, a: 1}
 --- !u!135 &763867473
 SphereCollider:
   m_ObjectHideFlags: 0
