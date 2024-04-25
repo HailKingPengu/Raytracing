@@ -225,34 +225,6 @@ Shader "Unlit/RayShader"
 			sampler2D PrevFrame;
 			int RenderedFrames;
 
-            // float3 ray_color(Ray r, inout uint state) {
-
-            //     // float t = hit_sphere(float3(0,0,-1), 0.5, r).dist;
-            //     // if (t > 0.0) {
-            //     //     float3 N = normalize(r.at(t) - float3(0,0,-1));
-            //     //     return 0.5 * float3(N.x + 1, N.y + 1, N.z + 1);
-            //     // }
-
-            //     HitInfo hitInfo = RayHit(r);
-
-            //     //nevermind
-
-            //     // if(hitInfo.hit)
-            //     // {
-            //     //     float3 direction = RandomHemisphereDirection(hitInfo.normal, state);
-
-            //     //     Ray nextRay;
-            //     //     nextRay.origin = hitInfo.hitPoint;
-            //     //     nextRay.dir = direction;
-
-            //     //     return 0.5 * ray_color(nextRay, state);
-            //     // }
-
-            //     float3 unit_direction = normalize(r.dir);
-            //     float a = 0.5*(unit_direction.y + 1.0);
-            //     return (1.0-a)*float3(1.0, 1.0, 1.0) + a*float3(0.5, 0.7, 1.0);
-            // }
-
             fixed4 frag (v2f i) : SV_Target
             {
                 float3 viewPointLocal = float3(i.uv - 0.5, 1) * CameraParameters;
@@ -284,11 +256,8 @@ Shader "Unlit/RayShader"
                     //rendertextures appear to be flipped(?)
                     float4 prevColour = tex2D(PrevFrame, float2(i.uv.x, 1 - i.uv.y));
 
-                    //return float4(i.uv.x, i.uv.y, 0, 0);
-
                     float weight = 1.0 / (RenderedFrames + 1);
                     return float4(saturate(prevColour * (1 - weight) + (colour / NumRaysPerPixel) * weight), 0);
-                    //return prevColour;
                 }
 
                 return float4(colour / NumRaysPerPixel, 1);
