@@ -44,9 +44,6 @@ public class Render : MonoBehaviour
             previousFrame.enableRandomWrite = true;
         }
 
-        //for seed
-        currentFrame++;
-
         bool isSceneCam = Camera.current.name == "SceneCamera";
 
         if (useShader)
@@ -108,6 +105,9 @@ public class Render : MonoBehaviour
         {
             renderedFrames++;
             isRenderingI = 1;
+
+            //for seed
+            currentFrame++;
         }
         else
         {
