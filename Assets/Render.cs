@@ -164,7 +164,7 @@ public class Render : MonoBehaviour
         material.SetInt("NumSpheres", sphereObjects.Length);
     }
 
-    void FixedUpdate()
+    void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
             isRendering = !isRendering;
