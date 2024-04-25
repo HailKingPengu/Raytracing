@@ -169,4 +169,14 @@ public class Render : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
             isRendering = !isRendering;
     }
+
+    public void SetNumRays(string input)
+    {
+        numRaysPerPixel = int.Parse(input);
+    }
+
+    public void SetMaxBounces(string input)
+    {
+        maxBounceCount = int.Parse(input);
+    }
 }
